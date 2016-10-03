@@ -17,12 +17,15 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-from __future__ import print_function
+from ._version import __version__
 from sklearn.base import BaseEstimator
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score
 import pandas as pd
 import numpy as np
 from sklearn.cross_validation import train_test_split
-from ._version import __version__
+import argparse
+import pdb
 
 class DistanceClassifier(BaseEstimator):
 
@@ -46,7 +49,9 @@ class DistanceClassifier(BaseEstimator):
         self.params.pop('self')
 
         self.d = d
-
+        self.le = LabelEncoder()
+        self.mu = None
+        self.Z = None
 
     def fit(self, features, classes):
         """Constructs the DistanceClassifier from the provided training data
@@ -63,25 +68,38 @@ class DistanceClassifier(BaseEstimator):
         None
 
         """
-        # group the data by class label
-        X = np.empty(np.unique(classes)) #,features.shape[0],features.shape[1]])
-        self.mu = np.empty(np.unique(classes))
-        self.Z = np.empty(np.unique(classes))
-        for i in classes:
-            X[i] = features[classes == i]
-            self.mu[i] = np.mean(X[i])
-            if self.d == 'mahalanobis':
-                self.Z[i] = np.cov(X[i])
+        # class labels
+        classes = self.le.fit_transform(classes)
 
+        # group the data by class label
+        X = []
+        self.mu = []
+        self.Z = []
+        for i in np.unique(classes):
+            X.append(features[classes == i])
+            self.mu.append(np.mean(X[i],axis=0))
+            if self.d == 'mahalanobis':
+                self.Z.append(np.cov(X[i].transpose()))
+
+        pdb.set_trace()
 
     def predict(self, features):
         """Predict class outputs for an unlabelled feature set"""
 
-        for i in np.arange(self.mu.shape[0]):
-            if self.d == 'mahalanobis':
-                distance[i] = (features - mu[i])*np.linalg.inv(Z[i])*(features - mu[i]).transpose()
-            else:
-                distance[i] = (features - mu[i])**2
+        pdb.set_trace()
+        distance = np.empty([len(self.mu)])
+        class_predict = []
+        for x in features:
+            for i in np.arange(len(self.mu)):
+                if self.d == 'mahalanobis':
+                    distance[i] = (x - self.mu[i]).dot(np.linalg.inv(self.Z[i])).dot((x - self.mu[i]).transpose())
+                else:
+                    distance[i] = (x - self.mu[i])**2
+
+            # assign class label belonging to smallest distance
+            class_predict.append(np.argmin(distance))
+
+        return self.le.inverse_transform(class_predict)
 
     def fit_predict(self, features, classes):
         """Convenience function that fits the provided data then predicts the class labels
@@ -101,7 +119,7 @@ class DistanceClassifier(BaseEstimator):
         self.fit(features, classes)
         return self.predict(features)
 
-    def score(self, features, classes, scoring_function=None, **scoring_function_kwargs):
+    def score(self, features, classes, scoring_function=accuracy_score, **scoring_function_kwargs):
         """Estimates the accuracy of the predictions from the constructed feature
 
         Parameters
@@ -117,17 +135,10 @@ class DistanceClassifier(BaseEstimator):
             The estimated accuracy based on the constructed feature
 
         """
-        if len(self.feature_map) == 0:
+        if not self.mu:
             raise ValueError('The DistanceClassifier model must be fit before score() can be called')
 
-        new_feature = self.transform(features)
-
-        if scoring_function is None:
-            results = (new_feature == classes)
-            score = np.sum(results)
-            return float(score) / classes.size
-        else:
-            return scoring_function(classes, new_feature, **scoring_function_kwargs)
+        return scoring_function(classes, self.predict(features), **scoring_function_kwargs)
 
     def get_params(self, deep=None):
         """Get parameters for this estimator
@@ -165,6 +176,9 @@ def main():
     parser.add_argument('-v', action='store', dest='VERBOSITY', default=1, choices=[0, 1, 2],
                         type=int, help='How much information DistanceClassifier communicates while it is running: 0 = none, 1 = minimal, 2 = all.')
 
+    parser.add_argument('-s', action='store', dest='RANDOM_STATE', default=0,
+                        type=int, help='Random state for train/test split.')
+
     parser.add_argument('--version', action='version', version='DistanceClassifier {version}'.format(version=__version__),
                         help='Show DistanceClassifier\'s version number and exit.')
 
@@ -179,29 +193,31 @@ def main():
     input_data = pd.read_csv(args.INPUT_FILE, sep=args.INPUT_SEPARATOR)
 
     if 'Class' in input_data.columns.values:
-        input_data.rename(columns={'Class': 'class'}, inplace=True)
+        input_data.rename(columns={'Label': 'label'}, inplace=True)
 
     RANDOM_STATE = args.RANDOM_STATE if args.RANDOM_STATE > 0 else None
-
-    training_indices, testing_indices = train_test_split(input_data.index,
-                                                         stratify=input_data['class'].values,
-                                                         train_size=0.75,
-                                                         test_size=0.25,
-                                                         random_state=RANDOM_STATE)
-
-    training_features = input_data.loc[training_indices].drop('class', axis=1).values
-    training_classes = input_data.loc[training_indices, 'class'].values
-
-    testing_features = input_data.loc[testing_indices].drop('class', axis=1).values
-    testing_classes = input_data.loc[testing_indices, 'class'].values
+    #
+    # training_indices, testing_indices = train_test_split(input_data.index,
+    #                                                      stratify=input_data['label'].values,
+    #                                                      train_size=0.75,
+    #                                                      test_size=0.25,
+    #                                                      random_state=RANDOM_STATE)
+    #
+    # training_features = input_data.loc[training_indices].drop('label', axis=1).values
+    # training_classes = input_data.loc[training_indices, 'label'].values
+    #
+    # testing_features = input_data.loc[testing_indices].drop('label', axis=1).values
+    # testing_classes = input_data.loc[testing_indices, 'label'].values
 
     # Run and evaluate DistanceClassifier on the training and testing data
-    dc = DistanceClassifier()
-    dc.fit(training_features, training_classes)
+    dc = DistanceClassifier(d = args.D)
+    # dc.fit(training_features, training_classes)
+    dc.fit(input_data.drop('label',axis=1).values, input_data['label'].values)
+    print(dc.score(input_data.drop('label',axis=1).values, input_data['label'].values))
 
-    if args.VERBOSITY >= 1:
-        print('\nTraining accuracy: {}'.format(dc.score(training_features, training_labels)))
-        print('Holdout accuracy: {}'.format(dc.score(testing_features, testing_labels)))
+    # if args.VERBOSITY >= 1:
+    #     print('\nTraining accuracy: {}'.format(dc.score(training_features, training_classes)))
+    #     print('Holdout accuracy: {}'.format(dc.score(testing_features, testing_classes)))
 
 
 
