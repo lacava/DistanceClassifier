@@ -48,9 +48,10 @@ class DistanceClassifier(BaseEstimator):
         self.params.pop('self')
 
         self.d = d
-        self.le = LabelEncoder()
         self.mu = None
         self.Z = None
+        self.le = LabelEncoder()
+
 
     def fit(self, features, classes):
         """Constructs the DistanceClassifier from the provided training data
@@ -80,6 +81,8 @@ class DistanceClassifier(BaseEstimator):
             if self.d == 'mahalanobis':
                 self.Z.append(np.cov(X[i].transpose()))
 
+        return self
+        
     def predict(self, features):
         """Predict class outputs for an unlabelled feature set"""
 
