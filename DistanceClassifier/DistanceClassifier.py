@@ -157,7 +157,7 @@ class DistanceClassifier(BaseEstimator):
         """
         return self.params
 
-    def is_invertible():
+    def is_invertible(self):
         """checks if Z is invertible"""
         return self.Z.shape[0] == self.Z.shape[1] and np.linalg.matrix_rank(self.Z) == self.Z.shape[0]
 
