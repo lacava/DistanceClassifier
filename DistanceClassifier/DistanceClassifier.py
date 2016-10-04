@@ -82,7 +82,7 @@ class DistanceClassifier(BaseEstimator):
                 self.Z.append(np.cov(X[i].transpose()))
 
         return self
-        
+
     def predict(self, features):
         """Predict class outputs for an unlabelled feature set"""
 
@@ -90,10 +90,10 @@ class DistanceClassifier(BaseEstimator):
         class_predict = []
         for x in features:
             for i in np.arange(len(self.mu)):
-                if self.d == 'mahalanobis':
-                    distance[i] = (x - self.mu[i]).dot(np.linalg.inv(self.Z[i])).dot((x - self.mu[i]).transpose())
+                if self.d == 'mahalanobis' and self.is_invertible():
+                        distance[i] = (x - self.mu[i]).dot(np.linalg.inv(self.Z[i])).dot((x - self.mu[i]).transpose())
                 else:
-                    distance[i] = (x - self.mu[i])**2
+                    distance[i] = (x - self.mu[i]).dot((x - self.mu[i]).transpose())
 
             # assign class label belonging to smallest distance
             class_predict.append(np.argmin(distance))
@@ -156,6 +156,10 @@ class DistanceClassifier(BaseEstimator):
             Parameter names mapped to their values
         """
         return self.params
+
+    def is_invertible():
+        """checks if Z is invertible"""
+        return self.Z.shape[0] == self.Z.shape[1] and np.linalg.matrix_rank(self.Z) == self.Z.shape[0]
 
 def main():
     """Main function that is called when DistanceClassifier is run on the command line"""
