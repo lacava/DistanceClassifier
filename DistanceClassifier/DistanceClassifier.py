@@ -25,7 +25,6 @@ import pandas as pd
 import numpy as np
 from sklearn.cross_validation import train_test_split
 import argparse
-import pdb
 
 class DistanceClassifier(BaseEstimator):
 
@@ -81,12 +80,9 @@ class DistanceClassifier(BaseEstimator):
             if self.d == 'mahalanobis':
                 self.Z.append(np.cov(X[i].transpose()))
 
-        pdb.set_trace()
-
     def predict(self, features):
         """Predict class outputs for an unlabelled feature set"""
 
-        pdb.set_trace()
         distance = np.empty([len(self.mu)])
         class_predict = []
         for x in features:

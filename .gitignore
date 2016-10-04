@@ -1,3 +1,6 @@
 __pycache__
 *.pyc
 .pypirc
+*.cfg
+DistanceClassifier.egg-info
+dist/

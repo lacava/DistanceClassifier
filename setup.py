@@ -3,14 +3,14 @@
 from setuptools import setup, find_packages
 
 def calculate_version():
-    initpy = open('few/_version.py').read().split('\n')
+    initpy = open('DistanceClassifier/_version.py').read().split('\n')
     version = list(filter(lambda x: '__version__' in x, initpy))[0].split('\'')[1]
     return version
 
 package_version = calculate_version()
 
 setup(
-    name='FEW',
+    name='DistanceClassifier',
     version=package_version,
     author='William La Cava',
     author_email='lacava@upenn.edu',
@@ -18,9 +18,9 @@ setup(
     url='https://github.com/lacava/DistanceClassifier',
     download_url='https://github.com/lacava/DistanceClassifier/releases/tag/'+package_version,
     license='GNU/GPLv3',
-    entry_points={'console_scripts': ['few=few:main', ]},
-    test_suite='nose.collector',
-    tests_require=['nose'],
+    entry_points={'console_scripts': ['DistanceClassifier=DistanceClassifier:main', ]},
+    # test_suite='nose.collector',
+    # tests_require=['nose'],
     description=('Distance Classifier'),
     long_description='''
 A simple distance-based classification algorithm.
