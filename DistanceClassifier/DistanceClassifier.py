@@ -159,7 +159,10 @@ class DistanceClassifier(BaseEstimator):
 
     def is_invertible(self,X):
         """checks if Z is invertible"""
-        return X.shape[0] == X.shape[1] and np.linalg.matrix_rank(X) == X.shape[0]
+        if len(X.shape) == 2:
+            return X.shape[0] == X.shape[1] and np.linalg.matrix_rank(X) == X.shape[0]
+        else:
+            return False
 
 def main():
     """Main function that is called when DistanceClassifier is run on the command line"""
