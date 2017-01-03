@@ -86,20 +86,25 @@ class DistanceClassifier(BaseEstimator):
     def predict(self, features):
         """Predict class outputs for an unlabelled feature set"""
 
-        distance = np.empty([len(self.mu)])
-        class_predict = []
-        for x in features:
-            for i in np.arange(len(self.mu)):
-                if self.d == 'mahalanobis' and self.is_invertible(self.Z[i]):
-                        distance[i] = (x - self.mu[i]).dot(np.linalg.inv(self.Z[i])).dot((x - self.mu[i]).transpose())
-                else:
-                    distance[i] = (x - self.mu[i]).dot((x - self.mu[i]).transpose())
+        # get distance of features to class clusters
+        distances = [self._distance(x) for x in features]
 
-            # assign class label belonging to smallest distance
-            class_predict.append(np.argmin(distance))
+        # assign class label belonging to smallest distance
+        class_predict = [np.argmin(d) for d in distances]
 
         return self.le.inverse_transform(class_predict)
 
+    def _distance(self,x):
+        """returns distance measures for features"""
+        distance = np.empty([len(self.mu)])
+
+        for i in np.arange(len(self.mu)):
+            if self.d == 'mahalanobis' and self.is_invertible(self.Z[i]):
+                    distance[i] = (x - self.mu[i]).dot(np.linalg.inv(self.Z[i])).dot((x - self.mu[i]).transpose())
+            else:
+                distance[i] = (x - self.mu[i]).dot((x - self.mu[i]).transpose())
+
+        return distance
     def fit_predict(self, features, classes):
         """Convenience function that fits the provided data then predicts the class labels
         Parameters
